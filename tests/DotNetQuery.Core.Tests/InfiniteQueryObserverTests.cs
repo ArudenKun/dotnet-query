@@ -2,13 +2,13 @@ namespace DotNetQuery.Core.Tests;
 
 public class InfiniteQueryObserverTests
 {
-    private readonly TestScheduler _scheduler = new();
+    private readonly TimeProvider _timeProvider = ObservableSystem.DefaultTimeProvider;
     private QueryCache _cache = default!;
 
     private static readonly QueryInstrumentation _instrumentation = new(NullLogger.Instance);
 
     [Before(Test)]
-    public void Setup() => _cache = new QueryCache(_scheduler, _instrumentation);
+    public void Setup() => _cache = new QueryCache(_timeProvider, _instrumentation);
 
     [After(Test)]
     public void Teardown() => _cache.Dispose();
@@ -36,7 +36,7 @@ public class InfiniteQueryObserverTests
             options,
             new QueryClientOptions { StaleTime = TimeSpan.Zero },
             _cache,
-            _scheduler,
+            _timeProvider,
             _instrumentation
         );
     }
@@ -129,7 +129,7 @@ public class InfiniteQueryObserverTests
             options,
             new QueryClientOptions { StaleTime = TimeSpan.Zero },
             _cache,
-            _scheduler,
+            _timeProvider,
             _instrumentation
         );
 
@@ -321,7 +321,7 @@ public class InfiniteQueryObserverTests
         await sut.State.Where(s => s.IsSuccess).FirstAsync();
 
         sut.Detach();
-        _scheduler.AdvanceBy(TimeSpan.FromMinutes(5).Ticks + 1);
+        _timeProvider.(TimeSpan.FromMinutes(5).Ticks + 1);
 
         using var rejoin = CreateObserver(keyFactory: _ => key);
         using var rejoinSub = rejoin.State.Subscribe();

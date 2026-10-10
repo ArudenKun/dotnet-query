@@ -6,7 +6,7 @@ internal sealed class Query<TArgs, TData> : IQuery, ICacheEntry
     private readonly QueryKey _key;
     private readonly TArgs _args;
     private readonly EffectiveQueryOptions<TArgs, TData> _options;
-    private readonly IScheduler _scheduler;
+    private readonly TimeProvider _timeProvider;
     private readonly QueryInstrumentation _instrumentation;
     private readonly string _metricName;
     private CancellationTokenSource _cancellationTokenSource = new();
@@ -25,14 +25,14 @@ internal sealed class Query<TArgs, TData> : IQuery, ICacheEntry
         QueryKey key,
         TArgs args,
         EffectiveQueryOptions<TArgs, TData> options,
-        IScheduler scheduler,
+        TimeProvider timeProvider,
         QueryInstrumentation instrumentation
     )
     {
         _key = key;
         _args = args;
         _options = options;
-        _scheduler = scheduler;
+        _timeProvider = timeProvider;
         _instrumentation = instrumentation;
         _metricName = options.Name ?? (key.Parts.Count > 0 ? key.Parts[0].ToString() ?? "unknown" : "unknown");
 
@@ -41,13 +41,16 @@ internal sealed class Query<TArgs, TData> : IQuery, ICacheEntry
             : new BehaviorSubject<QueryState<TData>>(QueryState<TData>.CreateIdle());
 
         _subscriptions.Add(
-            _invalidate.Select(trigger => Observable.FromAsync(ct => FetchAsync(trigger, ct))).Switch().Subscribe()
+            _invalidate
+                .Select(trigger => Observable.FromAsync(ct => new ValueTask(FetchAsync(trigger, ct))))
+                .Switch()
+                .Subscribe()
         );
 
         if (options.RefetchInterval is { } interval)
         {
             _subscriptions.Add(
-                Observable.Interval(interval, _scheduler).Subscribe(_ => Invalidate(FetchTrigger.Interval))
+                Observable.Interval(interval, _timeProvider).Subscribe(_ => Invalidate(FetchTrigger.Interval))
             );
         }
     }
@@ -78,15 +81,15 @@ internal sealed class Query<TArgs, TData> : IQuery, ICacheEntry
 
     public int ObserverCount => _subscriberCount;
 
-    public IObservable<Unit> StateChanged => _state.Select(_ => Unit.Default);
+    public Observable<Unit> StateChanged => _state.Select(_ => Unit.Default);
 
     /// <summary>Fires when the last active <see cref="State"/> subscriber disposes.</summary>
-    public IObservable<Unit> Unsubscribed => _unsubscribed;
+    public Observable<Unit> Unsubscribed => _unsubscribed;
 
     /// <summary>Fires when the first <see cref="State"/> subscriber attaches after having none.</summary>
-    public IObservable<Unit> Subscribed => _subscribed;
+    public Observable<Unit> Subscribed => _subscribed;
 
-    public IObservable<QueryState<TData>> State =>
+    public Observable<QueryState<TData>> State =>
         Observable.Create<QueryState<TData>>(observer =>
         {
             var subscription = _state.Subscribe(observer);
@@ -109,7 +112,7 @@ internal sealed class Query<TArgs, TData> : IQuery, ICacheEntry
                 _subscribed.OnNext(Unit.Default);
             }
 
-            return () =>
+            return Disposable.Create(() =>
             {
                 subscription.Dispose();
 
@@ -125,7 +128,7 @@ internal sealed class Query<TArgs, TData> : IQuery, ICacheEntry
                 {
                     _unsubscribed.OnNext(Unit.Default);
                 }
-            };
+            });
         });
 
     public void Refetch()
@@ -143,7 +146,7 @@ internal sealed class Query<TArgs, TData> : IQuery, ICacheEntry
     {
         lock (_syncRoot)
         {
-            _lastSuccessAt = _scheduler.Now;
+            _lastSuccessAt = _timeProvider.GetLocalNow();
             _isStale = false;
         }
 
@@ -194,7 +197,7 @@ internal sealed class Query<TArgs, TData> : IQuery, ICacheEntry
     {
         lock (_syncRoot)
         {
-            return _lastSuccessAt is { } last && _scheduler.Now - last < _options.StaleTime;
+            return _lastSuccessAt is { } last && _timeProvider.GetLocalNow() - last < _options.StaleTime;
         }
     }
 
@@ -294,7 +297,7 @@ internal sealed class Query<TArgs, TData> : IQuery, ICacheEntry
 
             lock (_syncRoot)
             {
-                _lastSuccessAt = _scheduler.Now;
+                _lastSuccessAt = _timeProvider.GetLocalNow();
             }
 
             stopwatch.Stop();

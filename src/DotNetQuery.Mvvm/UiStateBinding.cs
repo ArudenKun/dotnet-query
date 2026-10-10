@@ -37,7 +37,7 @@ internal sealed class UiStateBinding<TState> : IDisposable
     /// state change. Never invoked after <see cref="Dispose"/>.
     /// </param>
     public UiStateBinding(
-        IObservable<TState> source,
+        Observable<TState> source,
         TState initial,
         IUiDispatcher dispatcher,
         Action<TState, TState> apply

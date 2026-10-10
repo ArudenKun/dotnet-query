@@ -2,13 +2,13 @@ namespace DotNetQuery.Core.Tests;
 
 public class DataSelectorTests
 {
-    private readonly TestScheduler _scheduler = new();
+    private readonly TimeProvider _timeProvider = ObservableSystem.DefaultTimeProvider;
     private QueryCache _cache = default!;
 
     private static readonly QueryInstrumentation _instrumentation = new(NullLogger.Instance);
 
     [Before(Test)]
-    public void Setup() => _cache = new QueryCache(_scheduler, _instrumentation);
+    public void Setup() => _cache = new QueryCache(_timeProvider, _instrumentation);
 
     [After(Test)]
     public void Teardown() => _cache.Dispose();
@@ -24,7 +24,7 @@ public class DataSelectorTests
             options,
             new QueryClientOptions { StaleTime = TimeSpan.Zero },
             _cache,
-            _scheduler,
+            _timeProvider,
             _instrumentation
         );
     }

@@ -6,7 +6,7 @@ internal sealed class QueryObserver<TArgs, TData> : IQuery<TArgs, TData>, IQuery
     private readonly QueryCache _cache;
     private readonly EffectiveQueryOptions<TArgs, TData> _options;
     private readonly Func<TArgs, QueryKey> _keyFactory;
-    private readonly IScheduler _scheduler;
+    private readonly TimeProvider _timeProvider;
     private readonly QueryInstrumentation _instrumentation;
     private readonly BehaviorSubject<Query<TArgs, TData>?> _activeQuery = new(null);
     private readonly BehaviorSubject<bool> _isEnabled;
@@ -20,14 +20,14 @@ internal sealed class QueryObserver<TArgs, TData> : IQuery<TArgs, TData>, IQuery
         QueryOptions<TArgs, TData> options,
         QueryClientOptions globalOptions,
         QueryCache cache,
-        IScheduler scheduler,
+        TimeProvider timeProvider,
         QueryInstrumentation instrumentation
     )
     {
         _options = MergeOptions(options, globalOptions);
         _keyFactory = options.KeyFactory;
         _cache = cache;
-        _scheduler = scheduler;
+        _timeProvider = timeProvider;
         _instrumentation = instrumentation;
         _isEnabled = new BehaviorSubject<bool>(options.IsEnabled);
 
@@ -35,7 +35,7 @@ internal sealed class QueryObserver<TArgs, TData> : IQuery<TArgs, TData>, IQuery
             _args.Subscribe(args =>
             {
                 var key = options.KeyFactory(args);
-                var candidate = new Query<TArgs, TData>(key, args, _options, _scheduler, _instrumentation);
+                var candidate = new Query<TArgs, TData>(key, args, _options, _timeProvider, _instrumentation);
                 var query = _cache.GetOrCreate(key, candidate);
 
                 if (!ReferenceEquals(query, candidate))
@@ -75,7 +75,7 @@ internal sealed class QueryObserver<TArgs, TData> : IQuery<TArgs, TData>, IQuery
 
     public string MetricName => _activeQuery.Value?.MetricName ?? _options.Name ?? "unknown";
 
-    public IObservable<Unit> StateChanged =>
+    public Observable<Unit> StateChanged =>
         _activeQuery.Where(query => query is not null).Select(query => query!.StateChanged).Switch();
 
     public void SetArgs(TArgs args) => _args.OnNext(args);
@@ -84,20 +84,20 @@ internal sealed class QueryObserver<TArgs, TData> : IQuery<TArgs, TData>, IQuery
 
     public void SetEnabled(bool enabled) => _isEnabled.OnNext(enabled);
 
-    public IObservable<QueryState<TData>> State =>
+    public Observable<QueryState<TData>> State =>
         _activeQuery.Where(query => query is not null).Select(query => query!.State).Switch();
 
-    public IObservable<TData> Success =>
+    public Observable<TData> Success =>
         State
             .Where(state => state.IsSuccess)
             .Select(state => state.CurrentData!)
             .DistinctUntilChanged(_options.DataComparer);
 
-    public IObservable<Exception> Failure => State.Where(state => state.IsFailure).Select(state => state.Error!);
+    public Observable<Exception> Failure => State.Where(state => state.IsFailure).Select(state => state.Error!);
 
-    public IObservable<QueryState<TData>> Settled => State.Where(state => state.IsSuccess || state.IsFailure);
+    public Observable<QueryState<TData>> Settled => State.Where(state => state.IsSuccess || state.IsFailure);
 
-    public IObservable<TResult> Select<TResult>(
+    public Observable<TResult> Select<TResult>(
         Func<TData, TResult> selector,
         IEqualityComparer<TResult>? comparer = null
     ) => Success.Select(selector).DistinctUntilChanged(comparer ?? EqualityComparer<TResult>.Default);
@@ -113,7 +113,7 @@ internal sealed class QueryObserver<TArgs, TData> : IQuery<TArgs, TData>, IQuery
     public Task PrefetchAsync(TArgs args, CancellationToken cancellationToken = default)
     {
         var key = _keyFactory(args);
-        var candidate = new Query<TArgs, TData>(key, args, _options, _scheduler, _instrumentation);
+        var candidate = new Query<TArgs, TData>(key, args, _options, _timeProvider, _instrumentation);
         var query = _cache.GetOrCreate(key, candidate);
 
         if (!ReferenceEquals(query, candidate))

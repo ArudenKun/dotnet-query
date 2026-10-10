@@ -46,7 +46,7 @@ public interface IInfiniteQuery<TArgs, TData, TPageParam> : IQuery
     /// <summary>
     /// Emits on every state transition. Replays the latest state to new subscribers.
     /// </summary>
-    IObservable<InfiniteQueryState<TData, TPageParam>> State { get; }
+    Observable<InfiniteQueryState<TData, TPageParam>> State { get; }
 
     /// <summary>
     /// Emits the full accumulated page list after each fetch fully settles — not during
@@ -55,13 +55,13 @@ public interface IInfiniteQuery<TArgs, TData, TPageParam> : IQuery
     /// Re-emissions are suppressed when every page equals the previous emission according to
     /// <see cref="InfiniteQueryOptions{TArgs,TData,TPageParam}.DataComparer"/>.
     /// </summary>
-    IObservable<IReadOnlyList<TData>> Success { get; }
+    Observable<IReadOnlyList<TData>> Success { get; }
 
     /// <summary>Emits the <see cref="Exception"/> on each failed fetch.</summary>
-    IObservable<Exception> Failure { get; }
+    Observable<Exception> Failure { get; }
 
     /// <summary>Emits the final state after each fetch completes, regardless of success or failure.</summary>
-    IObservable<InfiniteQueryState<TData, TPageParam>> Settled { get; }
+    Observable<InfiniteQueryState<TData, TPageParam>> Settled { get; }
 
     /// <summary>
     /// Removes this query from the client cache while keeping active subscriptions alive.

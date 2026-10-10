@@ -81,27 +81,27 @@ public interface IQuery<TArgs, TData> : IQuery
     /// Emits on every state transition (e.g. Idle → Fetching → Success/Failed).
     /// Replays the latest state to new subscribers.
     /// </summary>
-    public IObservable<QueryState<TData>> State { get; }
+    public Observable<QueryState<TData>> State { get; }
 
     /// <summary>
     /// Emits the unwrapped <typeparamref name="TData"/> on each successful fetch.
     /// Derived from <see cref="State"/>, so if the current state is already a success, a new
     /// subscriber receives that value immediately rather than waiting for the next fetch.
     /// </summary>
-    public IObservable<TData> Success { get; }
+    public Observable<TData> Success { get; }
 
     /// <summary>
     /// Emits the <see cref="Exception"/> on each failed fetch.
     /// Derived from <see cref="State"/>, so if the current state is already a failure, a new
     /// subscriber receives that exception immediately rather than waiting for the next fetch.
     /// </summary>
-    public IObservable<Exception> Failure { get; }
+    public Observable<Exception> Failure { get; }
 
     /// <summary>
     /// Emits the final <see cref="QueryState{TData}"/> after each fetch completes,
     /// regardless of whether it succeeded or failed. Useful for hiding loading indicators.
     /// </summary>
-    public IObservable<QueryState<TData>> Settled { get; }
+    public Observable<QueryState<TData>> Settled { get; }
 
     /// <summary>
     /// Removes this query from the client cache while keeping active subscriptions alive.
@@ -121,7 +121,7 @@ public interface IQuery<TArgs, TData> : IQuery
     /// Equality comparer for <typeparamref name="TResult"/>. When <c>null</c>,
     /// <see cref="EqualityComparer{T}.Default"/> is used.
     /// </param>
-    public IObservable<TResult> Select<TResult>(
+    public Observable<TResult> Select<TResult>(
         Func<TData, TResult> selector,
         IEqualityComparer<TResult>? comparer = null
     );

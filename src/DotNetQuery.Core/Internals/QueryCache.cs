@@ -1,6 +1,6 @@
 namespace DotNetQuery.Core.Internals;
 
-internal sealed class QueryCache(IScheduler scheduler, QueryInstrumentation instrumentation) : IDisposable
+internal sealed class QueryCache(TimeProvider timeProvider, QueryInstrumentation instrumentation) : IDisposable
 {
     private readonly ConcurrentDictionary<QueryKey, IQuery> _entries = new();
     private readonly ConcurrentDictionary<QueryKey, IDisposable> _pendingRemovals = new();
@@ -8,12 +8,10 @@ internal sealed class QueryCache(IScheduler scheduler, QueryInstrumentation inst
     private readonly ConcurrentDictionary<QueryKey, IDisposable> _unsubscribedSubscriptions = new();
     private readonly ConcurrentDictionary<QueryKey, IDisposable> _subscribedSubscriptions = new();
     private readonly BehaviorSubject<IReadOnlyList<IQueryInspector>> _entriesSubject = new([]);
-    private readonly IScheduler _scheduler = scheduler;
-    private readonly QueryInstrumentation _instrumentation = instrumentation;
     private readonly Lock _evictionLock = new();
     private bool _disposed;
 
-    public IObservable<IReadOnlyList<IQueryInspector>> Entries => _entriesSubject.AsObservable();
+    public Observable<IReadOnlyList<IQueryInspector>> Entries => _entriesSubject.AsObservable();
 
     private IReadOnlyList<IQueryInspector> Snapshot() => [.. _entries.Values.Cast<IQueryInspector>()];
 
@@ -48,7 +46,7 @@ internal sealed class QueryCache(IScheduler scheduler, QueryInstrumentation inst
 
             if (ReferenceEquals(result, entry))
             {
-                _instrumentation.RecordCacheMiss(key, result.MetricName);
+                instrumentation.RecordCacheMiss(key, result.MetricName);
                 _stateSubscriptions[key] = entry.StateChanged.Subscribe(_ => _entriesSubject.OnNext(Snapshot()));
                 _unsubscribedSubscriptions[key] = entry.Unsubscribed.Subscribe(_ => Remove(key));
                 _subscribedSubscriptions[key] = entry.Subscribed.Subscribe(_ => CancelPendingRemoval(key));
@@ -56,7 +54,7 @@ internal sealed class QueryCache(IScheduler scheduler, QueryInstrumentation inst
             }
             else
             {
-                _instrumentation.RecordCacheHit(key, result.MetricName);
+                instrumentation.RecordCacheHit(key, result.MetricName);
             }
         }
 
@@ -106,7 +104,7 @@ internal sealed class QueryCache(IScheduler scheduler, QueryInstrumentation inst
             try
             {
                 subscription = Observable
-                    .Timer(query.CacheTime, _scheduler)
+                    .Timer(query.CacheTime, timeProvider)
                     .Subscribe(_ =>
                     {
                         IQuery? toDispose = null;
@@ -119,7 +117,7 @@ internal sealed class QueryCache(IScheduler scheduler, QueryInstrumentation inst
                             )
                             {
                                 toDispose = removed;
-                                _instrumentation.RecordCacheEviction(key, ((IQueryInspector)removed).MetricName);
+                                instrumentation.RecordCacheEviction(key, ((IQueryInspector)removed).MetricName);
                                 if (_stateSubscriptions.TryRemove(key, out var stateSub))
                                 {
                                     stateSub.Dispose();
@@ -213,7 +211,7 @@ internal sealed class QueryCache(IScheduler scheduler, QueryInstrumentation inst
 
         foreach (var query in _entries.Values)
         {
-            _instrumentation.RecordCacheDisposed(query.Key, ((IQueryInspector)query).MetricName);
+            instrumentation.RecordCacheDisposed(query.Key, ((IQueryInspector)query).MetricName);
             query.Dispose();
         }
 

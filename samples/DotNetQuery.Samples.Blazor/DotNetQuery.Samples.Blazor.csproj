@@ -4,6 +4,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="R3Extensions.Blazor" />
     <PackageReference Include="Radzen.Blazor" />
   </ItemGroup>
 

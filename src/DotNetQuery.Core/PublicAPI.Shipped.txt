@@ -2,23 +2,23 @@
 DotNetQuery.Core.IInfiniteQuery<TArgs, TData, TPageParam>
 DotNetQuery.Core.IInfiniteQuery<TArgs, TData, TPageParam>.CurrentState.get -> DotNetQuery.Core.InfiniteQueryState<TData!, TPageParam>!
 DotNetQuery.Core.IInfiniteQuery<TArgs, TData, TPageParam>.Detach() -> void
-DotNetQuery.Core.IInfiniteQuery<TArgs, TData, TPageParam>.Failure.get -> System.IObservable<System.Exception!>!
+DotNetQuery.Core.IInfiniteQuery<TArgs, TData, TPageParam>.Failure.get -> R3.Observable<System.Exception!>!
 DotNetQuery.Core.IInfiniteQuery<TArgs, TData, TPageParam>.FetchNextPage() -> void
 DotNetQuery.Core.IInfiniteQuery<TArgs, TData, TPageParam>.FetchPreviousPage() -> void
 DotNetQuery.Core.IInfiniteQuery<TArgs, TData, TPageParam>.SetArgs(TArgs args) -> void
 DotNetQuery.Core.IInfiniteQuery<TArgs, TData, TPageParam>.SetEnabled(bool enabled) -> void
-DotNetQuery.Core.IInfiniteQuery<TArgs, TData, TPageParam>.Settled.get -> System.IObservable<DotNetQuery.Core.InfiniteQueryState<TData!, TPageParam>!>!
-DotNetQuery.Core.IInfiniteQuery<TArgs, TData, TPageParam>.State.get -> System.IObservable<DotNetQuery.Core.InfiniteQueryState<TData!, TPageParam>!>!
-DotNetQuery.Core.IInfiniteQuery<TArgs, TData, TPageParam>.Success.get -> System.IObservable<System.Collections.Generic.IReadOnlyList<TData!>!>!
+DotNetQuery.Core.IInfiniteQuery<TArgs, TData, TPageParam>.Settled.get -> R3.Observable<DotNetQuery.Core.InfiniteQueryState<TData!, TPageParam>!>!
+DotNetQuery.Core.IInfiniteQuery<TArgs, TData, TPageParam>.State.get -> R3.Observable<DotNetQuery.Core.InfiniteQueryState<TData!, TPageParam>!>!
+DotNetQuery.Core.IInfiniteQuery<TArgs, TData, TPageParam>.Success.get -> R3.Observable<System.Collections.Generic.IReadOnlyList<TData!>!>!
 DotNetQuery.Core.IMutation<TArgs, TData>
 DotNetQuery.Core.IMutation<TArgs, TData>.Cancel() -> void
 DotNetQuery.Core.IMutation<TArgs, TData>.CurrentState.get -> DotNetQuery.Core.MutationState<TData>!
 DotNetQuery.Core.IMutation<TArgs, TData>.Execute(TArgs args) -> void
-DotNetQuery.Core.IMutation<TArgs, TData>.Failure.get -> System.IObservable<System.Exception!>!
+DotNetQuery.Core.IMutation<TArgs, TData>.Failure.get -> R3.Observable<System.Exception!>!
 DotNetQuery.Core.IMutation<TArgs, TData>.SetEnabled(bool enabled) -> void
-DotNetQuery.Core.IMutation<TArgs, TData>.Settled.get -> System.IObservable<DotNetQuery.Core.MutationState<TData>!>!
-DotNetQuery.Core.IMutation<TArgs, TData>.State.get -> System.IObservable<DotNetQuery.Core.MutationState<TData>!>!
-DotNetQuery.Core.IMutation<TArgs, TData>.Success.get -> System.IObservable<TData>!
+DotNetQuery.Core.IMutation<TArgs, TData>.Settled.get -> R3.Observable<DotNetQuery.Core.MutationState<TData>!>!
+DotNetQuery.Core.IMutation<TArgs, TData>.State.get -> R3.Observable<DotNetQuery.Core.MutationState<TData>!>!
+DotNetQuery.Core.IMutation<TArgs, TData>.Success.get -> R3.Observable<TData>!
 DotNetQuery.Core.IQuery
 DotNetQuery.Core.IQuery.CacheTime.get -> System.TimeSpan
 DotNetQuery.Core.IQuery.Cancel() -> void
@@ -28,15 +28,15 @@ DotNetQuery.Core.IQuery.Refetch() -> void
 DotNetQuery.Core.IQuery<TArgs, TData>
 DotNetQuery.Core.IQuery<TArgs, TData>.CurrentState.get -> DotNetQuery.Core.QueryState<TData!>!
 DotNetQuery.Core.IQuery<TArgs, TData>.Detach() -> void
-DotNetQuery.Core.IQuery<TArgs, TData>.Failure.get -> System.IObservable<System.Exception!>!
+DotNetQuery.Core.IQuery<TArgs, TData>.Failure.get -> R3.Observable<System.Exception!>!
 DotNetQuery.Core.IQuery<TArgs, TData>.PrefetchAsync(TArgs args, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
-DotNetQuery.Core.IQuery<TArgs, TData>.Select<TResult>(System.Func<TData!, TResult>! selector, System.Collections.Generic.IEqualityComparer<TResult>? comparer = null) -> System.IObservable<TResult>!
+DotNetQuery.Core.IQuery<TArgs, TData>.Select<TResult>(System.Func<TData!, TResult>! selector, System.Collections.Generic.IEqualityComparer<TResult>? comparer = null) -> R3.Observable<TResult>!
 DotNetQuery.Core.IQuery<TArgs, TData>.SetArgs(TArgs args) -> void
 DotNetQuery.Core.IQuery<TArgs, TData>.SetData(TData! data) -> void
 DotNetQuery.Core.IQuery<TArgs, TData>.SetEnabled(bool enabled) -> void
-DotNetQuery.Core.IQuery<TArgs, TData>.Settled.get -> System.IObservable<DotNetQuery.Core.QueryState<TData!>!>!
-DotNetQuery.Core.IQuery<TArgs, TData>.State.get -> System.IObservable<DotNetQuery.Core.QueryState<TData!>!>!
-DotNetQuery.Core.IQuery<TArgs, TData>.Success.get -> System.IObservable<TData!>!
+DotNetQuery.Core.IQuery<TArgs, TData>.Settled.get -> R3.Observable<DotNetQuery.Core.QueryState<TData!>!>!
+DotNetQuery.Core.IQuery<TArgs, TData>.State.get -> R3.Observable<DotNetQuery.Core.QueryState<TData!>!>!
+DotNetQuery.Core.IQuery<TArgs, TData>.Success.get -> R3.Observable<TData!>!
 DotNetQuery.Core.IQueryClient
 DotNetQuery.Core.IQueryClient.CreateInfiniteQuery<TArgs, TData, TPageParam>(DotNetQuery.Core.InfiniteQueryOptions<TArgs, TData!, TPageParam>! options) -> DotNetQuery.Core.IInfiniteQuery<TArgs, TData!, TPageParam>!
 DotNetQuery.Core.IQueryClient.CreateMutation<TArgs, TData>(DotNetQuery.Core.MutationOptions<TArgs, TData>! options) -> DotNetQuery.Core.IMutation<TArgs, TData>!
@@ -263,7 +263,7 @@ static DotNetQuery.Core.MutationState<TData>.operator ==(DotNetQuery.Core.Mutati
 static DotNetQuery.Core.PageParam<TValue>.None.get -> DotNetQuery.Core.PageParam<TValue>
 static DotNetQuery.Core.PageParam<TValue>.Some(TValue value) -> DotNetQuery.Core.PageParam<TValue>
 static DotNetQuery.Core.PageParam<TValue>.implicit operator DotNetQuery.Core.PageParam<TValue>(TValue value) -> DotNetQuery.Core.PageParam<TValue>
-static DotNetQuery.Core.QueryClientFactory.Create(DotNetQuery.Core.QueryClientOptions! options, System.Reactive.Concurrency.IScheduler? scheduler = null, Microsoft.Extensions.Logging.ILogger? logger = null) -> DotNetQuery.Core.IQueryClient!
+static DotNetQuery.Core.QueryClientFactory.Create(DotNetQuery.Core.QueryClientOptions! options, System.TimeProvider? timeProvider = null, Microsoft.Extensions.Logging.ILogger? logger = null) -> DotNetQuery.Core.IQueryClient!
 static DotNetQuery.Core.QueryClientOptions.operator !=(DotNetQuery.Core.QueryClientOptions? left, DotNetQuery.Core.QueryClientOptions? right) -> bool
 static DotNetQuery.Core.QueryClientOptions.operator ==(DotNetQuery.Core.QueryClientOptions? left, DotNetQuery.Core.QueryClientOptions? right) -> bool
 static DotNetQuery.Core.QueryKey.Default.get -> DotNetQuery.Core.QueryKey!

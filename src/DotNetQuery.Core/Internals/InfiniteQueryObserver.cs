@@ -7,7 +7,7 @@ internal sealed class InfiniteQueryObserver<TArgs, TData, TPageParam>
 {
     private readonly QueryCache _cache;
     private readonly EffectiveInfiniteQueryOptions<TArgs, TData, TPageParam> _options;
-    private readonly IScheduler _scheduler;
+    private readonly TimeProvider _timeProvider;
     private readonly QueryInstrumentation _instrumentation;
     private readonly BehaviorSubject<InfiniteQuery<TArgs, TData, TPageParam>?> _activeQuery = new(null);
     private readonly BehaviorSubject<bool> _isEnabled;
@@ -21,13 +21,13 @@ internal sealed class InfiniteQueryObserver<TArgs, TData, TPageParam>
         InfiniteQueryOptions<TArgs, TData, TPageParam> options,
         QueryClientOptions globalOptions,
         QueryCache cache,
-        IScheduler scheduler,
+        TimeProvider timeProvider,
         QueryInstrumentation instrumentation
     )
     {
         _options = MergeOptions(options, globalOptions);
         _cache = cache;
-        _scheduler = scheduler;
+        _timeProvider = timeProvider;
         _instrumentation = instrumentation;
         _isEnabled = new BehaviorSubject<bool>(options.IsEnabled);
 
@@ -39,7 +39,7 @@ internal sealed class InfiniteQueryObserver<TArgs, TData, TPageParam>
                     key,
                     args,
                     _options,
-                    _scheduler,
+                    _timeProvider,
                     _instrumentation
                 );
                 var query = _cache.GetOrCreate(key, candidate);
@@ -82,7 +82,7 @@ internal sealed class InfiniteQueryObserver<TArgs, TData, TPageParam>
 
     public string MetricName => _activeQuery.Value?.MetricName ?? _options.Name ?? "unknown";
 
-    public IObservable<Unit> StateChanged =>
+    public Observable<Unit> StateChanged =>
         _activeQuery.Where(query => query is not null).Select(query => query!.StateChanged).Switch();
 
     public void SetArgs(TArgs args) => _args.OnNext(args);
@@ -93,18 +93,18 @@ internal sealed class InfiniteQueryObserver<TArgs, TData, TPageParam>
 
     public void FetchPreviousPage() => _activeQuery.Value?.FetchPreviousPage();
 
-    public IObservable<InfiniteQueryState<TData, TPageParam>> State =>
+    public Observable<InfiniteQueryState<TData, TPageParam>> State =>
         _activeQuery.Where(query => query is not null).Select(query => query!.State).Switch();
 
-    public IObservable<IReadOnlyList<TData>> Success =>
+    public Observable<IReadOnlyList<TData>> Success =>
         State
             .Where(s => s.IsSuccess && !s.IsFetchingNextPage && !s.IsFetchingPreviousPage)
             .Select(s => s.Pages)
             .DistinctUntilChanged(new PagesComparer(_options.DataComparer));
 
-    public IObservable<Exception> Failure => State.Where(s => s.IsFailure).Select(s => s.Error!);
+    public Observable<Exception> Failure => State.Where(s => s.IsFailure).Select(s => s.Error!);
 
-    public IObservable<InfiniteQueryState<TData, TPageParam>> Settled =>
+    public Observable<InfiniteQueryState<TData, TPageParam>> Settled =>
         State.Where(s => s.IsFailure || (s.IsSuccess && !s.IsFetchingNextPage && !s.IsFetchingPreviousPage));
 
     public void Refetch() => _activeQuery.Value?.Refetch();

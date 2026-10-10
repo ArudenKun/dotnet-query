@@ -23,7 +23,7 @@ internal sealed class Mutation<TArgs, TData> : IMutation<TArgs, TData>
 
         _subscriptions.Add(
             _execute
-                .Select(args => Observable.FromAsync(ct => ExecuteAsync(args, ct)).TakeUntil(_cancel))
+                .Select(args => Observable.FromAsync(ct => new ValueTask(ExecuteAsync(args, ct))).TakeUntil(_cancel))
                 .Switch()
                 .Subscribe()
         );
@@ -33,13 +33,13 @@ internal sealed class Mutation<TArgs, TData> : IMutation<TArgs, TData>
 
     public void SetEnabled(bool enabled) => _isEnabled.OnNext(enabled);
 
-    public IObservable<MutationState<TData>> State => _state.AsObservable();
+    public Observable<MutationState<TData>> State => _state.AsObservable();
 
-    public IObservable<TData> Success => _state.Where(state => state.IsSuccess).Select(state => state.CurrentData!);
+    public Observable<TData> Success => _state.Where(state => state.IsSuccess).Select(state => state.CurrentData!);
 
-    public IObservable<Exception> Failure => _state.Where(state => state.IsFailure).Select(state => state.Error!);
+    public Observable<Exception> Failure => _state.Where(state => state.IsFailure).Select(state => state.Error!);
 
-    public IObservable<MutationState<TData>> Settled => _state.Where(state => state.IsSuccess || state.IsFailure);
+    public Observable<MutationState<TData>> Settled => _state.Where(state => state.IsSuccess || state.IsFailure);
 
     public static EffectiveMutationOptions<TArgs, TData> MergeOptions(
         MutationOptions<TArgs, TData> options,

@@ -9,8 +9,8 @@ namespace DotNetQuery.Core.Internals;
 internal interface ICacheEntry : IQueryInspector
 {
     /// <summary>Fires when the last active <c>State</c> subscriber disposes.</summary>
-    public IObservable<Unit> Unsubscribed { get; }
+    public Observable<Unit> Unsubscribed { get; }
 
     /// <summary>Fires when the first <c>State</c> subscriber attaches after having none.</summary>
-    public IObservable<Unit> Subscribed { get; }
+    public Observable<Unit> Subscribed { get; }
 }

@@ -27,7 +27,7 @@ internal sealed class InfiniteQuery<TArgs, TData, TPageParam> : IQuery, ICacheEn
     private readonly QueryKey _key;
     private readonly TArgs _args;
     private readonly EffectiveInfiniteQueryOptions<TArgs, TData, TPageParam> _options;
-    private readonly IScheduler _scheduler;
+    private readonly TimeProvider _timeProvider;
     private readonly QueryInstrumentation _instrumentation;
     private readonly string _metricName;
     private CancellationTokenSource _cancellationTokenSource = new();
@@ -48,14 +48,14 @@ internal sealed class InfiniteQuery<TArgs, TData, TPageParam> : IQuery, ICacheEn
         QueryKey key,
         TArgs args,
         EffectiveInfiniteQueryOptions<TArgs, TData, TPageParam> options,
-        IScheduler scheduler,
+        TimeProvider timeProvider,
         QueryInstrumentation instrumentation
     )
     {
         _key = key;
         _args = args;
         _options = options;
-        _scheduler = scheduler;
+        _timeProvider = timeProvider;
         _instrumentation = instrumentation;
         _metricName = options.Name ?? (key.Parts.Count > 0 ? key.Parts[0].ToString() ?? "unknown" : "unknown");
 
@@ -76,13 +76,16 @@ internal sealed class InfiniteQuery<TArgs, TData, TPageParam> : IQuery, ICacheEn
         }
 
         _subscriptions.Add(
-            _command.Select(cmd => Observable.FromAsync(ct => ExecuteAsync(cmd, ct))).Switch().Subscribe()
+            _command
+                .Select(cmd => Observable.FromAsync(ct => new ValueTask(ExecuteAsync(cmd, ct))))
+                .Switch()
+                .Subscribe()
         );
 
         if (options.RefetchInterval is { } interval)
         {
             _subscriptions.Add(
-                Observable.Interval(interval, _scheduler).Subscribe(_ => Invalidate(FetchTrigger.Interval))
+                Observable.Interval(interval, _timeProvider).Subscribe(_ => Invalidate(FetchTrigger.Interval))
             );
         }
     }
@@ -123,15 +126,15 @@ internal sealed class InfiniteQuery<TArgs, TData, TPageParam> : IQuery, ICacheEn
 
     public int ObserverCount => _subscriberCount;
 
-    public IObservable<Unit> StateChanged => _state.Select(_ => Unit.Default);
+    public Observable<Unit> StateChanged => _state.Select(_ => Unit.Default);
 
     /// <summary>Fires when the last active <see cref="State"/> subscriber disposes.</summary>
-    public IObservable<Unit> Unsubscribed => _unsubscribed;
+    public Observable<Unit> Unsubscribed => _unsubscribed;
 
     /// <summary>Fires when the first <see cref="State"/> subscriber attaches after having none.</summary>
-    public IObservable<Unit> Subscribed => _subscribed;
+    public Observable<Unit> Subscribed => _subscribed;
 
-    public IObservable<InfiniteQueryState<TData, TPageParam>> State =>
+    public Observable<InfiniteQueryState<TData, TPageParam>> State =>
         Observable.Create<InfiniteQueryState<TData, TPageParam>>(observer =>
         {
             var subscription = _state.Subscribe(observer);
@@ -154,11 +157,11 @@ internal sealed class InfiniteQuery<TArgs, TData, TPageParam> : IQuery, ICacheEn
                 _subscribed.OnNext(Unit.Default);
             }
 
-            return () =>
+            return Disposable.Create(() =>
             {
                 subscription.Dispose();
 
-                var becameIdle = false;
+                bool becameIdle;
 
                 lock (_syncRoot)
                 {
@@ -170,7 +173,7 @@ internal sealed class InfiniteQuery<TArgs, TData, TPageParam> : IQuery, ICacheEn
                 {
                     _unsubscribed.OnNext(Unit.Default);
                 }
-            };
+            });
         });
 
     public void FetchNextPage() => Send(FetchDirection.FetchNext, FetchTrigger.Manual);
@@ -221,7 +224,7 @@ internal sealed class InfiniteQuery<TArgs, TData, TPageParam> : IQuery, ICacheEn
     {
         lock (_syncRoot)
         {
-            return _lastSuccessAt is { } last && _scheduler.Now - last < _options.StaleTime;
+            return _lastSuccessAt is { } last && _timeProvider.GetLocalNow() - last < _options.StaleTime;
         }
     }
 
@@ -428,7 +431,7 @@ internal sealed class InfiniteQuery<TArgs, TData, TPageParam> : IQuery, ICacheEn
 
             lock (_syncRoot)
             {
-                _lastSuccessAt = _scheduler.Now;
+                _lastSuccessAt = _timeProvider.GetLocalNow();
             }
 
             var attempts = counter.Retries + 1;

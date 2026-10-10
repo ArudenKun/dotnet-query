@@ -13,5 +13,5 @@ internal interface IQueryInspector : IQuery
 
     public int ObserverCount { get; }
 
-    public IObservable<Unit> StateChanged { get; }
+    public Observable<Unit> StateChanged { get; }
 }

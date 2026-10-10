@@ -1,5 +1,6 @@
 using DotNetQuery.Extensions.DependencyInjection;
 using DotNetQuery.Samples.Blazor.Components;
+using R3;
 using Radzen;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,6 +16,7 @@ builder.Services.AddDotNetQuery(options =>
 });
 builder.Services.AddDotNetQuerySamplesShared();
 builder.Services.AddRadzenComponents();
+builder.Services.AddBlazorR3();
 
 var app = builder.Build();
 

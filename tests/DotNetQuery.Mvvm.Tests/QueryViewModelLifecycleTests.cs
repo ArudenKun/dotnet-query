@@ -1,22 +1,23 @@
+using R3;
+
 namespace DotNetQuery.Mvvm.Tests;
 
 public class QueryViewModelLifecycleTests
 {
     private readonly Mock<IQuery<int, string>> _queryMock = Mock.Of<IQuery<int, string>>();
     private readonly RecordingSynchronizationContext _uiContext = new();
-    private BehaviorSubject<QueryState<string>> _stateSubject = default!;
+    private ReactiveProperty<QueryState<string>> _stateSubject = default!;
 
     [After(Test)]
     public void Teardown()
     {
-        _stateSubject.OnCompleted();
         _stateSubject.Dispose();
     }
 
     private QueryViewModel<int, string> CreateSut(QueryState<string> initialState)
     {
         _stateSubject = new(initialState);
-        _queryMock.CurrentState.Returns(_stateSubject.Value);
+        _queryMock.CurrentState.Returns(_stateSubject.CurrentValue);
         _queryMock.State.Returns(_stateSubject.AsObservable());
 
         return new QueryViewModel<int, string>(_queryMock.Object, new SynchronizationContextUiDispatcher(_uiContext));
@@ -27,7 +28,12 @@ public class QueryViewModelLifecycleTests
     {
         using var sut = CreateSut(QueryState<string>.CreateIdle());
 
-        await Assert.That(_stateSubject.HasObservers).IsTrue();
+        // No HasObservers in R3. Verify the subscription is live by observing
+        // that the SUT reacts to a state change from the source.
+        _stateSubject.OnNext(QueryState<string>.CreateFetching());
+        _uiContext.DrainAll();
+
+        await Assert.That(sut.IsFetching).IsTrue();
     }
 
     [Test]
@@ -37,14 +43,18 @@ public class QueryViewModelLifecycleTests
 
         sut.Dispose();
 
-        await Assert.That(_stateSubject.HasObservers).IsFalse();
+        // Subscription released: pushing a new state no longer reaches the SUT.
+        _stateSubject.OnNext(QueryState<string>.CreateFetching());
+        _uiContext.DrainAll();
+
+        await Assert.That(sut.IsFetching).IsFalse();
         await Assert.That(Mock.Invocations(_queryMock).Any(i => i.MemberName == nameof(IDisposable.Dispose))).IsFalse();
     }
 
     private QueryViewModel<int, string> CreateClientOwnedSut(out Mock<IQueryClient> clientMock)
     {
         _stateSubject = new(QueryState<string>.CreateIdle());
-        _queryMock.CurrentState.Returns(_stateSubject.Value);
+        _queryMock.CurrentState.Returns(_stateSubject.CurrentValue);
         _queryMock.State.Returns(_stateSubject.AsObservable());
 
         clientMock = Mock.Of<IQueryClient>();
@@ -70,7 +80,11 @@ public class QueryViewModelLifecycleTests
 
         sut.Dispose();
 
-        await Assert.That(_stateSubject.HasObservers).IsFalse();
+        // Subscription released.
+        _stateSubject.OnNext(QueryState<string>.CreateFetching());
+        _uiContext.DrainAll();
+
+        await Assert.That(sut.IsFetching).IsFalse();
         await Assert.That(Mock.Invocations(_queryMock).Any(i => i.MemberName == nameof(IDisposable.Dispose))).IsTrue();
     }
 
@@ -82,7 +96,11 @@ public class QueryViewModelLifecycleTests
         sut.Dispose();
         sut.Dispose();
 
-        await Assert.That(_stateSubject.HasObservers).IsFalse();
+        // Still released after the second dispose.
+        _stateSubject.OnNext(QueryState<string>.CreateFetching());
+        _uiContext.DrainAll();
+
+        await Assert.That(sut.IsFetching).IsFalse();
     }
 
     [Test]

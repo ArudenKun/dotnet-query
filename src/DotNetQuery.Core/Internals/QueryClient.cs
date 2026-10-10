@@ -4,22 +4,26 @@ internal sealed class QueryClient : IQueryClient, IQueryClientInspector
 {
     private readonly QueryCache _cache;
     private readonly QueryClientOptions _globalOptions;
-    private readonly IScheduler _scheduler;
+    private readonly TimeProvider _timeProvider;
     private readonly QueryInstrumentation _instrumentation;
 
-    public QueryClient(QueryClientOptions globalOptions, IScheduler scheduler, QueryInstrumentation instrumentation)
+    public QueryClient(
+        QueryClientOptions globalOptions,
+        TimeProvider timeProvider,
+        QueryInstrumentation instrumentation
+    )
     {
         _globalOptions = globalOptions;
-        _scheduler = scheduler;
+        _timeProvider = timeProvider;
         _instrumentation = instrumentation;
-        _cache = new(_scheduler, _instrumentation);
+        _cache = new(_timeProvider, _instrumentation);
     }
 
-    public IObservable<IReadOnlyList<IQueryInspector>> CacheEntries => _cache.Entries;
+    public Observable<IReadOnlyList<IQueryInspector>> CacheEntries => _cache.Entries;
 
     public IQuery<TArgs, TData> CreateQuery<TArgs, TData>(QueryOptions<TArgs, TData> options)
         where TData : class =>
-        new QueryObserver<TArgs, TData>(options, _globalOptions, _cache, _scheduler, _instrumentation);
+        new QueryObserver<TArgs, TData>(options, _globalOptions, _cache, _timeProvider, _instrumentation);
 
     public IInfiniteQuery<TArgs, TData, TPageParam> CreateInfiniteQuery<TArgs, TData, TPageParam>(
         InfiniteQueryOptions<TArgs, TData, TPageParam> options
@@ -29,7 +33,7 @@ internal sealed class QueryClient : IQueryClient, IQueryClientInspector
             options,
             _globalOptions,
             _cache,
-            _scheduler,
+            _timeProvider,
             _instrumentation
         );
 

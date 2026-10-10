@@ -33,7 +33,7 @@ public static class ServiceCollectionExtensions
                 serviceProvider =>
                     QueryClientFactory.Create(
                         options,
-                        serviceProvider.GetService<IScheduler>(),
+                        serviceProvider.GetService<TimeProvider>(),
                         serviceProvider.GetService<ILoggerFactory>()?.CreateLogger(QueryTelemetry.SourceName)
                     ),
                 options.ExecutionMode.ToServiceLifetime()

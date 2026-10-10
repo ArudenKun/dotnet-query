@@ -27,7 +27,7 @@ sealed class Program
 #if DEBUG
         .WithDeveloperTools()
 #endif
-        .WithInterFont().LogToTrace();
+        .WithInterFont().UseR3().LogToTrace();
 
     private static ServiceProvider BuildServiceProvider()
     {

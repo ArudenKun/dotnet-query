@@ -2,5 +2,5 @@ namespace DotNetQuery.Core.Internals;
 
 internal interface IQueryClientInspector
 {
-    public IObservable<IReadOnlyList<IQueryInspector>> CacheEntries { get; }
+    public Observable<IReadOnlyList<IQueryInspector>> CacheEntries { get; }
 }

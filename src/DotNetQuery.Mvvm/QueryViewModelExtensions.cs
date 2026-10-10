@@ -119,7 +119,7 @@ public static class QueryViewModelExtensions
     /// The UI-thread dispatcher. When <c>null</c>, <see cref="SynchronizationContext.Current"/> is
     /// captured at the moment this method is called.
     /// </param>
-    public static IObservable<T> ObserveOnUi<T>(this IObservable<T> source, IUiDispatcher? dispatcher = null)
+    public static Observable<T> ObserveOnUi<T>(this Observable<T> source, IUiDispatcher? dispatcher = null)
     {
         ArgumentNullException.ThrowIfNull(source);
 
@@ -143,10 +143,10 @@ public static class QueryViewModelExtensions
                     {
                         if (!Volatile.Read(ref isDisposed))
                         {
-                            observer.OnError(error);
+                            observer.OnErrorResume(error);
                         }
                     }),
-                () =>
+                _ =>
                     effectiveDispatcher.Post(() =>
                     {
                         if (!Volatile.Read(ref isDisposed))

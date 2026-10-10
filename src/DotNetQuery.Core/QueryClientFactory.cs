@@ -12,26 +12,30 @@ public static class QueryClientFactory
     /// Options are validated before the client is created.
     /// </summary>
     /// <param name="options">The configuration options for the client.</param>
-    /// <param name="scheduler">
-    /// An optional <see cref="IScheduler"/> used for timing operations such as stale-time,
-    /// cache eviction, and refetch intervals. Defaults to <see cref="DefaultScheduler.Instance"/> when <c>null</c>.
+    /// <param name="timeProvider">
+    /// An optional <see cref="TimeProvider"/> used for timing operations such as stale-time,
+    /// cache eviction, and refetch intervals. Defaults to <see cref="TimeProvider.System"/> when <c>null</c>.
     /// </param>
     /// <param name="logger">
     /// An optional <see cref="ILogger"/> used for structured log messages on fetch, cache, retry, and mutation events.
     /// When <c>null</c>, logging is disabled but metrics and traces are still emitted.
     /// </param>
     /// <returns>A new <see cref="IQueryClient"/> instance.</returns>
-    public static IQueryClient Create(QueryClientOptions options, IScheduler? scheduler = null, ILogger? logger = null)
+    public static IQueryClient Create(
+        QueryClientOptions options,
+        TimeProvider? timeProvider = null,
+        ILogger? logger = null
+    )
     {
         options.Validate();
 
         logger ??= NullLogger.Instance;
-        scheduler ??= Scheduler.Default;
+        timeProvider ??= ObservableSystem.DefaultTimeProvider;
         var instrumentation = new QueryInstrumentation(
             logger,
             includeQueryKeyInMetrics: options.IncludeQueryKeyInMetrics
         );
 
-        return new QueryClient(options, scheduler, instrumentation);
+        return new QueryClient(options, timeProvider, instrumentation);
     }
 }

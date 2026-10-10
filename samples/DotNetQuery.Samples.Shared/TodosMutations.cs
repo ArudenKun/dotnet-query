@@ -1,4 +1,4 @@
-using System.Reactive;
+using R3;
 
 namespace DotNetQuery.Samples.Shared;
 
